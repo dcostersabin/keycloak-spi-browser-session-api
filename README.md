@@ -4,7 +4,7 @@ The goal of this [SPI (Service Provider Interface)](https://www.keycloak.org/doc
 
 Useful to provide SSO (Single Sign On) capabilities for legacy web application to a new web application being authenticated by Keycloak.
 
-__Important__ to note is that this SPI expects the legacy web application to be able to access a valid JWT. This might occur if you need to introduce new features in legacy web applications.
+__Important__ to note is that this SPI expects the legacy web application to be able to access a valid JWT. This might occur if you need to introduce new features in legacy web applications. Also the user must have email address assigned to them.
 
 ## Usage
 
@@ -20,7 +20,7 @@ var targetClientForNewSession = "application";
 var jwt = "eyJhbGciOiJSUzI1NiIs.....";
 // invocation
 var xmlHttp = new XMLHttpRequest();
-xmlHttp.open("GET", `${providerUrl}/auth/realms/${realm}/browser-session/init?publicClient=${targetClientForNewSession}`, false);
+xmlHttp.open("POST", `${providerUrl}/realms/${realm}/browser-session/init?publicClient=${targetClientForNewSession}`, false);
 xmlHttp.withCredentials = true;
 xmlHttp.setRequestHeader("Authorization", "Bearer " + jwt);
 xmlHttp.send(null);
@@ -35,12 +35,12 @@ It contains of one single API request:
 
 | HTTP Method | Path                                                                               | Request Header                              | Description                                                                                                                                                                                                        |
 |-------------|------------------------------------------------------------------------------------|---------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| GET         | `baseUrl`/auth/realms/`realm`/browser-session/init?publicClient=`targetClientName` | Ensure `Authorization: Bearer` with the JWT | `baseUrl`: URL to Keycloak e.g. <https://your.keycloak.example.org> <br> `realm`: realm to be used e.g. master <br> `targetClientName`: public client (defined in Keycloak) for which to start the browser session |
+| POST         | `baseUrl`/realms/`realm`/browser-session/init?publicClient=`targetClientName` | Ensure `Authorization: Bearer` with the JWT | `baseUrl`: URL to Keycloak e.g. <https://your.keycloak.example.org> <br> `realm`: realm to be used e.g. master <br> `targetClientName`: public client (defined in Keycloak) for which to start the browser session |
 
 ## Deployment
 
 1. Build with `mvn clean package`
-2. Copy resulting artifact `keycloak-spi-browser-session-api-1.0.jar` to the `deployments` folder of Keycloak
+2. Copy resulting artifact `keycloak-spi-browser-session-api-1.1.jar` to the `deployments` folder of Keycloak
 
 ## Configuration
 
@@ -67,7 +67,7 @@ The goal is to initiate a browser session from `start-app` only having a valid J
 
 Please configure Keycloak as follows:
 
-* login to Keycloak via <http://localhost/> (`user` / `bitnami`)
+* login to Keycloak via <http://localhost/> (`admin`)
 * create two clients
   * `dest-app` with access type `public` and Web Origin `http://localhost:5082` and/or `*`
   * `private` with access type `confidential`
@@ -77,7 +77,7 @@ Please configure Keycloak as follows:
 Build and deploy it
 
 ```sh
-mvn clean package && docker cp target/keycloak-spi-browser-session-api-1.0.jar keycloak-spi-browser-session-api-keycloak-1:/opt/bitnami/keycloak/standalone/deployments/keycloak-spi-browser-session-api-1.0.jar
+docker compose up
 ```
 
 Run the test by generating a new access token and placing it into the `demo/start-app/index.html`. This is only for demo purposes.
@@ -88,7 +88,7 @@ CLIENT_ID=private
 CLIENT_SECRET=8b3576db-6492-4238-aa60-d7c71a9663f7
 API_USER=testuser
 API_PASSWORD='Test123!'
-ACCESS_TOKEN=$(curl -s -d "client_id=$CLIENT_ID" -d "client_secret=$CLIENT_SECRET" --data-urlencode "username=$API_USER" --data-urlencode "password=$API_PASSWORD" -d 'grant_type=password' 'http://localhost:5080/auth/realms/master/protocol/openid-connect/token' | jq -r '.access_token')
+ACCESS_TOKEN=$(curl -s -d "client_id=$CLIENT_ID" -d "client_secret=$CLIENT_SECRET" --data-urlencode "username=$API_USER" --data-urlencode "password=$API_PASSWORD" -d 'grant_type=password' 'http://localhost:5080/realms/master/protocol/openid-connect/token' | jq -r '.access_token')
 sed -i -E 's#var jwt = ".*$#var jwt = "'"$ACCESS_TOKEN"'";#' demo/start-app/index.html
 ```
 
