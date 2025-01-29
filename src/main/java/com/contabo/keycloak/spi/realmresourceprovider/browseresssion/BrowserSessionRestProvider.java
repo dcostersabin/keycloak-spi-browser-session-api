@@ -1,6 +1,5 @@
 package com.contabo.keycloak.spi.realmresourceprovider.browseresssion;
 
-import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.authorization.util.Tokens;
 import org.keycloak.common.ClientConnection;
 import org.keycloak.events.Errors;
@@ -18,15 +17,15 @@ import org.keycloak.utils.MediaType;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import javax.ws.rs.Encoded;
-import javax.ws.rs.GET;
-import javax.ws.rs.OPTIONS;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.Encoded;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.OPTIONS;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 public class BrowserSessionRestProvider implements RealmResourceProvider {
 
@@ -46,7 +45,6 @@ public class BrowserSessionRestProvider implements RealmResourceProvider {
 
   @OPTIONS
   @Path("init")
-  @NoCache
   @Produces({ MediaType.TEXT_PLAIN_UTF_8 })
   @Encoded
   public Response checkCORS(@QueryParam("publicClient") String targetClient) {
@@ -62,14 +60,13 @@ public class BrowserSessionRestProvider implements RealmResourceProvider {
         .header("Access-Control-Allow-Headers",
             BSAPI_ACCESS_CONTROL_ALLOW_HEADERS)
         .header("Access-Control-Allow-Methods",
-            "GET, OPTIONS")
+            "POST, OPTIONS")
         .entity("")
         .build();
   }
 
-  @GET
+  @POST
   @Path("init")
-  @NoCache
   @Produces({ MediaType.APPLICATION_JSON })
   @Encoded
   public Response setSessionCookies(@QueryParam("publicClient") String targetClient) {
@@ -79,7 +76,7 @@ public class BrowserSessionRestProvider implements RealmResourceProvider {
     final RealmModel realm = this.keycloakSession.getContext().getRealm();
 
     // create new user session and bind it to the target client Id
-    final UserModel user = this.keycloakSession.users().getUserById(validToken.getSubject(), realm);
+    final UserModel user = this.keycloakSession.users().getUserByEmail(realm, validToken.getEmail());
     final ClientConnection clientConnection = this.keycloakSession.getContext().getConnection();
     UserSessionModel newUserSession = this.keycloakSession.sessions().createUserSession(realm, user, user.getUsername(),
         clientConnection.getRemoteAddr(), "KEYCLOAK", false, null, null);
